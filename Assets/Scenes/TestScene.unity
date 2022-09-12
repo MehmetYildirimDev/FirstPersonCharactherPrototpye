@@ -4054,7 +4054,7 @@ CharacterController:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Height: 2
+  m_Height: 1.8
   m_Radius: 0.4
   m_SlopeLimit: 45
   m_StepOffset: 0.3
@@ -4081,6 +4081,10 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   isGrounded: 0
+  PlayerHeight: 0
+  PlayerPivotCenter: 0
+  MainCamera: {fileID: 963194227}
+  MoveSpeed: 3
   x: 0
   z: 0
 --- !u!43 &1738817645

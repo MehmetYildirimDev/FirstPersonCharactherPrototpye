@@ -7,7 +7,7 @@ public class PlayerMovement : MonoBehaviour
 
     CharacterController characterController;
 
-
+    //Jump
     public float JumpHeight = 1f;
     Vector3 velocity;
     public float gravity = -9.81f;
@@ -16,7 +16,15 @@ public class PlayerMovement : MonoBehaviour
     public LayerMask groundMask;
     public bool isGrounded;
 
-    float MoveSpeed = 3f;
+    //crouching
+    public float PlayerHeight;
+    public float PlayerPivotCenter;
+    public Camera MainCamera;
+    
+
+
+    //Move
+    public float MoveSpeed = 3f;
 
     public float x;
     public float z;
@@ -25,9 +33,25 @@ public class PlayerMovement : MonoBehaviour
     {
         characterController = GetComponent<CharacterController>();
     }
+    private void Start()
+    {
+        PlayerHeight = characterController.height;
+        PlayerPivotCenter = characterController.center.y;
+    }
 
     private void Update()
     {
+        #region Sprint
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            MoveSpeed = 6f;
+        }
+        else
+        {
+            MoveSpeed = 3f;
+        }
+
+
         #region Movement
         x = Input.GetAxis("Horizontal");
         z = Input.GetAxis("Vertical");
@@ -58,6 +82,28 @@ public class PlayerMovement : MonoBehaviour
         characterController.Move(velocity * Time.deltaTime);
 
         #endregion
+
+
+
+        #endregion
+
+        #region Crouch
+        if (Input.GetKey(KeyCode.LeftControl))
+        {
+            characterController.height = PlayerHeight / 2;        
+            MoveSpeed = 1f;
+            
+        }
+        else
+        {
+            characterController.height = PlayerHeight;
+            MoveSpeed = 3f;
+        }
+
+
+        #endregion
+
+
     }
 
 
