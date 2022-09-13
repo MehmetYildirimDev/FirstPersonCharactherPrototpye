@@ -100,9 +100,18 @@ public class PlayerMovement : MonoBehaviour
             MoveSpeed = 3f;
         }
 
-
         #endregion
 
+        #region FootSteps
+
+
+
+        if (move.magnitude>0)
+        {
+
+        }
+
+        #endregion
 
     }
 
