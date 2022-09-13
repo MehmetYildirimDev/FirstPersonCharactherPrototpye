@@ -5,20 +5,25 @@ using UnityEngine;
 public class FirstPersonController : MonoBehaviour
 {
     public bool canMove { get; private set; } = true;
-    private bool isSprinting => canSprint && Input.GetKey(SprintKey);
+    private bool isSprinting => canSprint && Input.GetKey(SprintKey) && !isCrouching;
+    // !isCrouching bunu ben ekledim hata olursa bak
     private bool ShouldJump => Input.GetKeyDown(JumpKey) && characterController.isGrounded;
+    private bool ShouldCrouch => Input.GetKeyDown(CrouchKey) && !DuringCrouchAnimation && characterController.isGrounded;
 
     [Header("Functional Options")]
     [SerializeField] private bool canSprint = true;
     [SerializeField] private bool canJump = true;
+    [SerializeField] private bool canCrouch = true;
 
     [Header("Controls")]
     [SerializeField] private KeyCode SprintKey = KeyCode.LeftShift;
     [SerializeField] private KeyCode JumpKey = KeyCode.Space;
+    [SerializeField] private KeyCode CrouchKey = KeyCode.LeftControl;
 
     [Header("Movement Parameters")]
     [SerializeField] private float WalkSpeed = 3.0f;
     [SerializeField] private float SprintSpeed = 6.0f;
+    [SerializeField] private float CrouchSpeed = 1.5f;
 
 
     [Header("Look Parameters")]
@@ -31,6 +36,15 @@ public class FirstPersonController : MonoBehaviour
     [Header("Jumping Parameters")]
     [SerializeField] private float JumpForce = 8.0f;
     [SerializeField] private float Gravity = 30.0f;
+
+    [Header("Crouch Parameters")]
+    [SerializeField] private float CroucHeight = 0.5f;
+    [SerializeField] private float StandHeight = 2f;
+    [SerializeField] private float TimeToCrouch = 0.25f;
+    [SerializeField] private Vector3 CrouchingCenter = new Vector3(0, 0.5f, 0);
+    [SerializeField] private Vector3 StandingCenter = new Vector3(0, 0, 0);
+    private bool isCrouching;
+    private bool DuringCrouchAnimation;
 
     private Camera PlayerCamera;
     private CharacterController characterController;
@@ -54,9 +68,12 @@ public class FirstPersonController : MonoBehaviour
         {
             HandleMovementInput();
             HandleMouseLook();
-            
-            if(canJump)
+
+            if (canJump)
                 HandleJump();
+
+            if (canCrouch)
+                HandleCrouch();
 
             ApplyFinalyMovements();
         }
@@ -64,7 +81,7 @@ public class FirstPersonController : MonoBehaviour
 
     private void HandleMovementInput()
     {
-        currentInput = new Vector2((isSprinting ? SprintSpeed : WalkSpeed) * Input.GetAxis("Vertical"), (isSprinting ? SprintSpeed : WalkSpeed) * Input.GetAxis("Horizontal"));
+        currentInput = new Vector2((isCrouching ? CrouchSpeed : isSprinting ? SprintSpeed : WalkSpeed) * Input.GetAxis("Vertical"), (isCrouching ? CrouchSpeed : isSprinting ? SprintSpeed : WalkSpeed) * Input.GetAxis("Horizontal"));
 
         float moveDirectionY = moveDirecton.y;
 
@@ -93,6 +110,11 @@ public class FirstPersonController : MonoBehaviour
         }
     }
 
+    private void HandleCrouch()
+    {
+        if (ShouldCrouch)
+            StartCoroutine(CrouchStand());
+    }
 
     private void ApplyFinalyMovements()
     {
@@ -104,7 +126,38 @@ public class FirstPersonController : MonoBehaviour
         characterController.Move(moveDirecton * Time.deltaTime);
     }
 
+    private IEnumerator CrouchStand()
+    {
+        //tavani fark edebilmek icin ///yoksa kafamiz icine giriyo
 
+        if (isCrouching && Physics.Raycast(PlayerCamera.transform.position, Vector3.up, 1f))
+            yield break;
+
+
+        DuringCrouchAnimation = true;
+
+        float timeElapsed = 0f;
+        float targetHeight = isCrouching ? StandHeight : CroucHeight;
+        float currentHeight = characterController.height;
+        Vector3 targetCenter = isCrouching ? StandingCenter : CrouchingCenter;
+        Vector3 currentCenter = characterController.center;
+
+        while (timeElapsed < TimeToCrouch)
+        {
+            characterController.height = Mathf.Lerp(currentHeight, targetHeight, timeElapsed / TimeToCrouch);
+            //Saniyenin 4de 1 kadar surede
+            characterController.center = Vector3.Lerp(currentCenter, targetCenter, timeElapsed / TimeToCrouch);
+            timeElapsed += Time.deltaTime;
+            yield return null;
+        }
+        //Yukarda minik aciklar veriyor o yuzden net olsun diye buraya yazdik
+        characterController.height = targetHeight;
+        characterController.center = targetCenter;
+
+        isCrouching = !isCrouching;
+
+        DuringCrouchAnimation = false;
+    }
 
 
 
