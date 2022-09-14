@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class FirstPersonController : MonoBehaviour
 {
@@ -39,6 +40,17 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField, Range(1, 10)] private float LookSpeedY = 2.0f;
     [SerializeField, Range(1, 180)] private float UpperLookLimit = 80.0f;
     [SerializeField, Range(1, 180)] private float LowerLookLimit = 80.0f;
+
+    [Header("Healt parameters")]
+    [SerializeField] private float maxHealt = 100f;
+    [SerializeField] private float timeBeforeRegenStarts = 3f;
+    [SerializeField] private float healtValueIncrement = 1f;
+    [SerializeField] private float healtTimeIncrement = 0.1f;
+    private float currentHealt;
+    private Coroutine regenratingHealty;
+    public static Action<float> onTakeDamage;
+    public static Action<float> onDamage;
+    public static Action<float> onHeal;
 
 
     [Header("Jumping Parameters")]
@@ -121,6 +133,16 @@ public class FirstPersonController : MonoBehaviour
 
     private float RotationX = 0;
 
+    private void OnEnable()
+    {
+        onTakeDamage += ApplyDamage;
+    }
+
+    private void OnDisable()
+    {
+        onTakeDamage -= ApplyDamage;
+    }
+
     private void Awake()
     {
         PlayerCamera = GetComponentInChildren<Camera>();
@@ -128,6 +150,7 @@ public class FirstPersonController : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         defultYPos = PlayerCamera.transform.localPosition.y;
         defualtFov = PlayerCamera.fieldOfView;
+        currentHealt = maxHealt;
         Cursor.visible = false;
     }
 
@@ -284,17 +307,17 @@ public class FirstPersonController : MonoBehaviour
                 switch (hit.collider.tag)
                 {
                     case "FootSteps/Grass":
-                        FootStepAudioSource.PlayOneShot(grassClips[Random.Range(0, grassClips.Length - 1)]);
+                        FootStepAudioSource.PlayOneShot(grassClips[UnityEngine.Random.Range(0, grassClips.Length - 1)]);
                         break;
                     case "FootSteps/Metal":
-                        FootStepAudioSource.PlayOneShot(MetalClips[Random.Range(0, MetalClips.Length - 1)]);
+                        FootStepAudioSource.PlayOneShot(MetalClips[UnityEngine.Random.Range(0, MetalClips.Length - 1)]);
                         break;
                     case "FootSteps/Wood":
-                        FootStepAudioSource.PlayOneShot(woodClips[Random.Range(0, woodClips.Length - 1)]);
+                        FootStepAudioSource.PlayOneShot(woodClips[UnityEngine.Random.Range(0, woodClips.Length - 1)]);
                         break;
 
                     default:
-                        FootStepAudioSource.PlayOneShot(NormalClips[Random.Range(0, NormalClips.Length - 1)]);
+                        FootStepAudioSource.PlayOneShot(NormalClips[UnityEngine.Random.Range(0, NormalClips.Length - 1)]);
                         break;
                 }
             }
@@ -303,6 +326,31 @@ public class FirstPersonController : MonoBehaviour
         }
 
     }
+
+    private void ApplyDamage(float dmg)
+    {
+        currentHealt -= dmg;
+        onDamage?.Invoke(currentHealt);
+
+        if (currentHealt <= 0)
+            KillPlayer();
+        else if (regenratingHealty != null)
+            StopCoroutine(regenratingHealty);
+
+        regenratingHealty = StartCoroutine(RegenerateHealth());
+
+    }
+
+    private void KillPlayer()
+    {
+        currentHealt = 0;
+
+        if (regenratingHealty != null)
+            StopCoroutine(RegenerateHealth());
+
+        print("Dead");
+    }
+
 
     private void ApplyFinalyMovements()
     {
@@ -368,7 +416,24 @@ public class FirstPersonController : MonoBehaviour
 
     }
 
+    private IEnumerator RegenerateHealth()
+    {
+        yield return new WaitForSeconds(timeBeforeRegenStarts);
+        WaitForSeconds timeToWait = new WaitForSeconds(healtTimeIncrement);
 
+        while (currentHealt < maxHealt)
+        {
+            currentHealt += healtValueIncrement;
+            if (currentHealt > maxHealt)
+                currentHealt = maxHealt;
+
+
+            onHeal?.Invoke(currentHealt);
+            yield return timeToWait;
+        }
+
+        regenratingHealty = null;
+    }
 
 
 }
