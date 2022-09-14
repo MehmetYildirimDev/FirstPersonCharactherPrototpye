@@ -18,6 +18,7 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private bool WillSlideOnSlopes = true;
     [SerializeField] private bool CanZoom = true;
     [SerializeField] private bool CanInteract = true;
+    [SerializeField] private bool useFootSteps = true;
 
     [Header("Controls")]
     [SerializeField] private KeyCode SprintKey = KeyCode.LeftShift;
@@ -69,6 +70,21 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private float ZoomFov = 30f;
     private float defualtFov;
     private Coroutine zoomRoutine;
+
+    [Header("Foot Steps Parameters")]
+    [SerializeField] private float baseStepSpeed = 0.5f;
+    [SerializeField] private float CrouchStepMultipler = 1.5f;
+    [SerializeField] private float SprintStepMultipler = 0.6f;
+    [SerializeField] private AudioSource FootStepAudioSource = default;
+    [SerializeField] private AudioClip[] woodClips = default;
+    [SerializeField] private AudioClip[] MetalClips = default;
+    [SerializeField] private AudioClip[] grassClips = default;
+    [SerializeField] private AudioClip[] NormalClips = default;
+    private float footStepTimer = 0;
+    private float GetCurrentOffset => isCrouching ? (baseStepSpeed * CrouchStepMultipler) : isSprinting ? (baseStepSpeed * SprintStepMultipler) : baseStepSpeed;
+
+
+
 
     //SLÝDÝNG PARAMETERS ///editorde degistirilecek bir sey olmadýgýndan boyle yaptýk
     private Vector3 hitPontNormal;//ustunde bulundugumuz yuzer
@@ -133,6 +149,9 @@ public class FirstPersonController : MonoBehaviour
 
             if (CanZoom)
                 HandleZoom();
+
+            if (useFootSteps)
+                HandleFootSteps();
 
             if (CanInteract)
             {
@@ -226,13 +245,13 @@ public class FirstPersonController : MonoBehaviour
     {
         if (Physics.Raycast(PlayerCamera.ViewportPointToRay(interactonRayPoint), out RaycastHit hit, interactonDÝstance))
         {
-            if (hit.collider.gameObject.layer == 10 && (currentInteractable == null || hit.collider.gameObject.GetInstanceID()!=currentInteractable.GetInstanceID()))
+            if (hit.collider.gameObject.layer == 10 && (currentInteractable == null || hit.collider.gameObject.GetInstanceID() != currentInteractable.GetInstanceID()))
             {
                 hit.collider.TryGetComponent(out currentInteractable);
                 if (currentInteractable)
                     currentInteractable.onFocus();
 
-                
+
             }
         }
         else if (currentInteractable)
@@ -245,10 +264,44 @@ public class FirstPersonController : MonoBehaviour
     private void HandleInteractionInput()
     {
         if (Input.GetKeyDown(InteractKey) && currentInteractable != null &&
-            Physics.Raycast(PlayerCamera.ViewportPointToRay(interactonRayPoint),out RaycastHit hit, interactonDÝstance,interactonLayer))
+            Physics.Raycast(PlayerCamera.ViewportPointToRay(interactonRayPoint), out RaycastHit hit, interactonDÝstance, interactonLayer))
         {
             currentInteractable.onInteract();
         }
+    }
+
+    private void HandleFootSteps()
+    {
+        if (!characterController.isGrounded) return;
+        if (currentInput == Vector2.zero) return;
+
+        footStepTimer -= Time.deltaTime;
+
+        if (footStepTimer <= 0)
+        {
+            if (Physics.Raycast(PlayerCamera.transform.position, Vector3.down, out RaycastHit hit, 3f))
+            {
+                switch (hit.collider.tag)
+                {
+                    case "FootSteps/Grass":
+                        FootStepAudioSource.PlayOneShot(grassClips[Random.Range(0, grassClips.Length - 1)]);
+                        break;
+                    case "FootSteps/Metal":
+                        FootStepAudioSource.PlayOneShot(MetalClips[Random.Range(0, MetalClips.Length - 1)]);
+                        break;
+                    case "FootSteps/Wood":
+                        FootStepAudioSource.PlayOneShot(woodClips[Random.Range(0, woodClips.Length - 1)]);
+                        break;
+
+                    default:
+                        FootStepAudioSource.PlayOneShot(NormalClips[Random.Range(0, NormalClips.Length - 1)]);
+                        break;
+                }
+            }
+
+            footStepTimer = GetCurrentOffset;
+        }
+
     }
 
     private void ApplyFinalyMovements()
