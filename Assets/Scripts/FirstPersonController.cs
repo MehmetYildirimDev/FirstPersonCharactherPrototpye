@@ -16,11 +16,15 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private bool canCrouch = true;
     [SerializeField] private bool canUseHaedBob = true;
     [SerializeField] private bool WillSlideOnSlopes = true;
+    [SerializeField] private bool CanZoom = true;
+    [SerializeField] private bool CanInteract = true;
 
     [Header("Controls")]
     [SerializeField] private KeyCode SprintKey = KeyCode.LeftShift;
     [SerializeField] private KeyCode JumpKey = KeyCode.Space;
     [SerializeField] private KeyCode CrouchKey = KeyCode.LeftControl;
+    [SerializeField] private KeyCode ZommKey = KeyCode.Mouse1;
+    [SerializeField] private KeyCode InteractKey = KeyCode.E;
 
     [Header("Movement Parameters")]
     [SerializeField] private float WalkSpeed = 3.0f;
@@ -60,15 +64,20 @@ public class FirstPersonController : MonoBehaviour
     private float defultYPos = 0f;
     private float timer;
 
-    //SLÝDÝNG PARAMETERS ///editorde degistirilecek bir sey olmadýgýndan boyle yaptýk
+    [Header("Zoom Parameters")]
+    [SerializeField] private float timeToZoom = 0.3f;
+    [SerializeField] private float ZoomFov = 30f;
+    private float defualtFov;
+    private Coroutine zoomRoutine;
 
+    //SLÝDÝNG PARAMETERS ///editorde degistirilecek bir sey olmadýgýndan boyle yaptýk
     private Vector3 hitPontNormal;//ustunde bulundugumuz yuzer
 
     private bool isSliding
     {
         get
         {
-            if(characterController.isGrounded && Physics.Raycast(transform.position,Vector3.down,out RaycastHit slopehit, 2f))
+            if (characterController.isGrounded && Physics.Raycast(transform.position, Vector3.down, out RaycastHit slopehit, 2f))
             {
                 hitPontNormal = slopehit.normal;
                 return Vector3.Angle(hitPontNormal, Vector3.up) > characterController.slopeLimit;
@@ -80,6 +89,12 @@ public class FirstPersonController : MonoBehaviour
 
         }
     }
+
+    [Header("Interaction")]
+    [SerializeField] private Vector3 interactonRayPoint = default;
+    [SerializeField] private float interactonDÝstance = default;
+    [SerializeField] private LayerMask interactonLayer = default;
+    private Interactable currentInteractable;
 
 
     private Camera PlayerCamera;
@@ -96,6 +111,7 @@ public class FirstPersonController : MonoBehaviour
         characterController = GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
         defultYPos = PlayerCamera.transform.localPosition.y;
+        defualtFov = PlayerCamera.fieldOfView;
         Cursor.visible = false;
     }
 
@@ -115,6 +131,14 @@ public class FirstPersonController : MonoBehaviour
             if (canUseHaedBob)
                 HandleHeadBob();
 
+            if (CanZoom)
+                HandleZoom();
+
+            if (CanInteract)
+            {
+                HandleInteractionCheck();
+                HandleInteractionInput();
+            }
 
 
             ApplyFinalyMovements();
@@ -173,6 +197,60 @@ public class FirstPersonController : MonoBehaviour
 
     }
 
+    private void HandleZoom()
+    {
+        if (Input.GetKeyDown(ZommKey))
+        {
+            if (zoomRoutine != null)//null ise calismiyordur
+            {
+                StopCoroutine(zoomRoutine);//calisiyorsa durduruyoruz
+                zoomRoutine = null;
+            }
+
+            zoomRoutine = StartCoroutine(ToggleZoom(true));
+        }
+
+        if (Input.GetKeyUp(ZommKey))//biraktiginda
+        {
+            if (zoomRoutine != null)
+            {
+                StopCoroutine(zoomRoutine);
+                zoomRoutine = null;
+            }
+
+            zoomRoutine = StartCoroutine(ToggleZoom(false));
+        }
+    }
+
+    private void HandleInteractionCheck()
+    {
+        if (Physics.Raycast(PlayerCamera.ViewportPointToRay(interactonRayPoint), out RaycastHit hit, interactonDÝstance))
+        {
+            if (hit.collider.gameObject.layer == 10 && (currentInteractable == null || hit.collider.gameObject.GetInstanceID()!=currentInteractable.GetInstanceID()))
+            {
+                hit.collider.TryGetComponent(out currentInteractable);
+                if (currentInteractable)
+                    currentInteractable.onFocus();
+
+                
+            }
+        }
+        else if (currentInteractable)
+        {
+            currentInteractable.onLoseFocus();
+            currentInteractable = null;
+        }
+    }
+
+    private void HandleInteractionInput()
+    {
+        if (Input.GetKeyDown(InteractKey) && currentInteractable != null &&
+            Physics.Raycast(PlayerCamera.ViewportPointToRay(interactonRayPoint),out RaycastHit hit, interactonDÝstance,interactonLayer))
+        {
+            currentInteractable.onInteract();
+        }
+    }
+
     private void ApplyFinalyMovements()
     {
         if (!characterController.isGrounded)
@@ -181,7 +259,7 @@ public class FirstPersonController : MonoBehaviour
         }
 
         if (WillSlideOnSlopes && isSliding)
-            moveDirecton = new Vector3(hitPontNormal.x, -hitPontNormal.y, hitPontNormal.z) * SlopeSpeed;
+            moveDirecton += new Vector3(hitPontNormal.x, -hitPontNormal.y, hitPontNormal.z) * SlopeSpeed;
 
         characterController.Move(moveDirecton * Time.deltaTime);
     }
@@ -219,7 +297,23 @@ public class FirstPersonController : MonoBehaviour
         DuringCrouchAnimation = false;
     }
 
+    private IEnumerator ToggleZoom(bool isEnter)
+    {
+        float targetFov = isEnter ? ZoomFov : defualtFov;
+        float staringFov = PlayerCamera.fieldOfView;
+        float timeElapsed = 0;
 
+        while (timeElapsed < timeToZoom)
+        {
+            PlayerCamera.fieldOfView = Mathf.Lerp(staringFov, targetFov, timeElapsed / timeToZoom);
+            timeElapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        PlayerCamera.fieldOfView = targetFov;
+        zoomRoutine = null;
+
+    }
 
 
 
