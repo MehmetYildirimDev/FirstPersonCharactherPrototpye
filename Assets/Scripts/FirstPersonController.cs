@@ -15,6 +15,7 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private bool canJump = true;
     [SerializeField] private bool canCrouch = true;
     [SerializeField] private bool canUseHaedBob = true;
+    [SerializeField] private bool WillSlideOnSlopes = true;
 
     [Header("Controls")]
     [SerializeField] private KeyCode SprintKey = KeyCode.LeftShift;
@@ -25,6 +26,7 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private float WalkSpeed = 3.0f;
     [SerializeField] private float SprintSpeed = 6.0f;
     [SerializeField] private float CrouchSpeed = 1.5f;
+    [SerializeField] private float SlopeSpeed = 8f;
 
 
     [Header("Look Parameters")]
@@ -58,6 +60,26 @@ public class FirstPersonController : MonoBehaviour
     private float defultYPos = 0f;
     private float timer;
 
+    //SLÝDÝNG PARAMETERS ///editorde degistirilecek bir sey olmadýgýndan boyle yaptýk
+
+    private Vector3 hitPontNormal;//ustunde bulundugumuz yuzer
+
+    private bool isSliding
+    {
+        get
+        {
+            if(characterController.isGrounded && Physics.Raycast(transform.position,Vector3.down,out RaycastHit slopehit, 2f))
+            {
+                hitPontNormal = slopehit.normal;
+                return Vector3.Angle(hitPontNormal, Vector3.up) > characterController.slopeLimit;
+            }
+            else
+            {
+                return false;
+            }
+
+        }
+    }
 
 
     private Camera PlayerCamera;
@@ -92,6 +114,8 @@ public class FirstPersonController : MonoBehaviour
 
             if (canUseHaedBob)
                 HandleHeadBob();
+
+
 
             ApplyFinalyMovements();
         }
@@ -155,6 +179,9 @@ public class FirstPersonController : MonoBehaviour
         {
             moveDirecton.y -= Gravity * Time.deltaTime;//en yakin yuzeye ceker
         }
+
+        if (WillSlideOnSlopes && isSliding)
+            moveDirecton = new Vector3(hitPontNormal.x, -hitPontNormal.y, hitPontNormal.z) * SlopeSpeed;
 
         characterController.Move(moveDirecton * Time.deltaTime);
     }
