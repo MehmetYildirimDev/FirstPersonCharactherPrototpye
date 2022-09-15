@@ -20,6 +20,7 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private bool CanZoom = true;
     [SerializeField] private bool CanInteract = true;
     [SerializeField] private bool useFootSteps = true;
+    [SerializeField] private bool useStamina = true;
 
     [Header("Controls")]
     [SerializeField] private KeyCode SprintKey = KeyCode.LeftShift;
@@ -41,7 +42,7 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField, Range(1, 180)] private float UpperLookLimit = 80.0f;
     [SerializeField, Range(1, 180)] private float LowerLookLimit = 80.0f;
 
-    [Header("Healt parameters")]
+    [Header("Healt Parameters")]
     [SerializeField] private float maxHealt = 100f;
     [SerializeField] private float timeBeforeRegenStarts = 3f;
     [SerializeField] private float healtValueIncrement = 1f;
@@ -52,6 +53,15 @@ public class FirstPersonController : MonoBehaviour
     public static Action<float> onDamage;
     public static Action<float> onHeal;
 
+    [Header("Stamina Parameters")]
+    [SerializeField] private float MaxStamina = 100;
+    [SerializeField] private float StaminaUseMulipler = 5;
+    [SerializeField] private float timeBeforeStaminaRegenStarts = 5;
+    [SerializeField] private float StaminaValueIncrement = 2;
+    [SerializeField] private float StaminaTimeIncrement = 0.1f;
+    private float currentStamina;
+    private Coroutine regenratingStamina;
+    public static Action<float> onStaminaChange;
 
     [Header("Jumping Parameters")]
     [SerializeField] private float JumpForce = 8.0f;
@@ -151,6 +161,7 @@ public class FirstPersonController : MonoBehaviour
         defultYPos = PlayerCamera.transform.localPosition.y;
         defualtFov = PlayerCamera.fieldOfView;
         currentHealt = maxHealt;
+        currentStamina = MaxStamina;
         Cursor.visible = false;
     }
 
@@ -182,6 +193,8 @@ public class FirstPersonController : MonoBehaviour
                 HandleInteractionInput();
             }
 
+            if (useStamina)
+                HandleStamina();
 
             ApplyFinalyMovements();
         }
@@ -351,6 +364,35 @@ public class FirstPersonController : MonoBehaviour
         print("Dead");
     }
 
+    private void HandleStamina()
+    {
+        if (isSprinting && currentInput != Vector2.zero)
+        {
+            if (regenratingStamina != null)//yenileme yapiliyorsa duruyo
+            {
+                StopCoroutine(regenratingStamina);
+                regenratingStamina = null;
+            }
+
+
+
+            currentStamina -= StaminaUseMulipler * Time.deltaTime;
+
+            if (currentStamina < 0)
+                currentStamina = 0;
+
+            onStaminaChange?.Invoke(currentStamina);
+
+            if (currentStamina <= 0)
+                canSprint = false;
+        }
+
+        if(!isSprinting && currentStamina < MaxStamina && regenratingStamina == null)
+        {
+            regenratingStamina = StartCoroutine(RegenerateStamina());
+        }
+
+    }
 
     private void ApplyFinalyMovements()
     {
@@ -435,5 +477,27 @@ public class FirstPersonController : MonoBehaviour
         regenratingHealty = null;
     }
 
+    private IEnumerator RegenerateStamina()
+    {
+        yield return new WaitForSeconds(timeBeforeStaminaRegenStarts);
+        WaitForSeconds timetoWait = new WaitForSeconds(StaminaTimeIncrement);
+
+        while (currentStamina < MaxStamina)
+        {
+            if (currentStamina > 0)
+                canSprint = true;
+
+            currentStamina += StaminaValueIncrement;
+
+            if (currentStamina > MaxStamina)
+                currentStamina = MaxStamina;
+
+            onStaminaChange?.Invoke(currentStamina);
+
+            yield return timetoWait;
+        }
+
+        regenratingStamina = null;
+    }
 
 }
