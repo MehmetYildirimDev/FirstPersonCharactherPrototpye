@@ -7534,7 +7534,7 @@ MonoBehaviour:
   healtValueIncrement: 1
   healtTimeIncrement: 0.1
   MaxStamina: 100
-  StaminaUseMulipler: 10
+  StaminaUseMulipler: 15
   timeBeforeStaminaRegenStarts: 5
   StaminaValueIncrement: 2
   StaminaTimeIncrement: 0.1
@@ -7544,6 +7544,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: a59f574f465367f4588778d5f690b88a, type: 3}
   - {fileID: 8300000, guid: 29e5d48482c5c3e4ebe918edd0dabcf1, type: 3}
   - {fileID: 8300000, guid: 60a4099373965054d97f47feb72859a6, type: 3}
+  - {fileID: 8300000, guid: ce778bccc35f11449a8358100e7b6eed, type: 3}
+  - {fileID: 8300000, guid: 2ce6f58b7f063b94ab0fe371119c50ca, type: 3}
   - {fileID: 8300000, guid: 4cf3fcc18ae7bf846bb8a5beec7e3d63, type: 3}
   JumpForce: 8
   Gravity: 30

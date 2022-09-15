@@ -55,7 +55,7 @@ public class FirstPersonController : MonoBehaviour
 
     [Header("Stamina Parameters")]
     [SerializeField] private float MaxStamina = 100;
-    [SerializeField] private float StaminaUseMulipler = 10;
+    [SerializeField] private float StaminaUseMulipler = 15;
     [SerializeField] private float timeBeforeStaminaRegenStarts = 5;
     [SerializeField] private float StaminaValueIncrement = 2;
     [SerializeField] private float StaminaTimeIncrement = 0.1f;
@@ -64,7 +64,7 @@ public class FirstPersonController : MonoBehaviour
     public static Action<float> onStaminaChange;
     [SerializeField] private AudioClip[] HardBreathing = default;
     private float BreathingStepTimer = 0;
-    private float BreathingSpeed = 1.2f;
+    private float BreathingSpeed = 0.8f;
 
     [Header("Jumping Parameters")]
     [SerializeField] private float JumpForce = 8.0f;
