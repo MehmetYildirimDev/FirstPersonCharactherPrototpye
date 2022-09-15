@@ -112,7 +112,7 @@ public class FirstPersonController : MonoBehaviour
 
 
     //SLÝDÝNG PARAMETERS ///editorde degistirilecek bir sey olmadýgýndan boyle yaptýk
-    private Vector3 hitPontNormal;//ustunde bulundugumuz yuzer
+    private Vector3 hitPontNormal;//ustunde bulundugumuz yuzey
 
     private bool isSliding
     {
