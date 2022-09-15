@@ -55,13 +55,16 @@ public class FirstPersonController : MonoBehaviour
 
     [Header("Stamina Parameters")]
     [SerializeField] private float MaxStamina = 100;
-    [SerializeField] private float StaminaUseMulipler = 5;
+    [SerializeField] private float StaminaUseMulipler = 10;
     [SerializeField] private float timeBeforeStaminaRegenStarts = 5;
     [SerializeField] private float StaminaValueIncrement = 2;
     [SerializeField] private float StaminaTimeIncrement = 0.1f;
     private float currentStamina;
     private Coroutine regenratingStamina;
     public static Action<float> onStaminaChange;
+    [SerializeField] private AudioClip[] HardBreathing = default;
+    private float BreathingStepTimer = 0;
+    private float BreathingSpeed = 1.2f;
 
     [Header("Jumping Parameters")]
     [SerializeField] private float JumpForce = 8.0f;
@@ -97,7 +100,7 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private float baseStepSpeed = 0.5f;
     [SerializeField] private float CrouchStepMultipler = 1.5f;
     [SerializeField] private float SprintStepMultipler = 0.6f;
-    [SerializeField] private AudioSource FootStepAudioSource = default;
+    [SerializeField] private AudioSource audioSource = default;
     [SerializeField] private AudioClip[] woodClips = default;
     [SerializeField] private AudioClip[] MetalClips = default;
     [SerializeField] private AudioClip[] grassClips = default;
@@ -320,17 +323,17 @@ public class FirstPersonController : MonoBehaviour
                 switch (hit.collider.tag)
                 {
                     case "FootSteps/Grass":
-                        FootStepAudioSource.PlayOneShot(grassClips[UnityEngine.Random.Range(0, grassClips.Length - 1)]);
+                        audioSource.PlayOneShot(grassClips[UnityEngine.Random.Range(0, grassClips.Length - 1)]);
                         break;
                     case "FootSteps/Metal":
-                        FootStepAudioSource.PlayOneShot(MetalClips[UnityEngine.Random.Range(0, MetalClips.Length - 1)]);
+                        audioSource.PlayOneShot(MetalClips[UnityEngine.Random.Range(0, MetalClips.Length - 1)]);
                         break;
                     case "FootSteps/Wood":
-                        FootStepAudioSource.PlayOneShot(woodClips[UnityEngine.Random.Range(0, woodClips.Length - 1)]);
+                        audioSource.PlayOneShot(woodClips[UnityEngine.Random.Range(0, woodClips.Length - 1)]);
                         break;
 
                     default:
-                        FootStepAudioSource.PlayOneShot(NormalClips[UnityEngine.Random.Range(0, NormalClips.Length - 1)]);
+                        audioSource.PlayOneShot(NormalClips[UnityEngine.Random.Range(0, NormalClips.Length - 1)]);
                         break;
                 }
             }
@@ -374,8 +377,6 @@ public class FirstPersonController : MonoBehaviour
                 regenratingStamina = null;
             }
 
-
-
             currentStamina -= StaminaUseMulipler * Time.deltaTime;
 
             if (currentStamina < 0)
@@ -385,11 +386,26 @@ public class FirstPersonController : MonoBehaviour
 
             if (currentStamina <= 0)
                 canSprint = false;
+
+
         }
 
-        if(!isSprinting && currentStamina < MaxStamina && regenratingStamina == null)
+        if (!isSprinting && currentStamina < MaxStamina && regenratingStamina == null)
         {
             regenratingStamina = StartCoroutine(RegenerateStamina());
+        }
+
+
+
+        if (currentStamina <= 10)
+        {
+            BreathingStepTimer -= Time.deltaTime;
+
+            if (BreathingStepTimer <= 0)
+            {
+                audioSource.PlayOneShot(HardBreathing[UnityEngine.Random.Range(0, HardBreathing.Length - 1)]);
+                BreathingStepTimer = BreathingSpeed;
+            }
         }
 
     }
