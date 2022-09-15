@@ -146,6 +146,11 @@ public class FirstPersonController : MonoBehaviour
 
     private float RotationX = 0;
 
+
+    
+    public static FirstPersonController instance;//Singleton yapiyoz
+
+
     private void OnEnable()
     {
         onTakeDamage += ApplyDamage;
@@ -158,6 +163,8 @@ public class FirstPersonController : MonoBehaviour
 
     private void Awake()
     {
+        instance = this;
+
         PlayerCamera = GetComponentInChildren<Camera>();
         characterController = GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
